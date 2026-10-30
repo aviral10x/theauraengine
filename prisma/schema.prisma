@@ -1,0 +1,143 @@
+// Local dev uses SQLite. For production switch provider to "postgresql"
+// and point DATABASE_URL at Postgres (Supabase / Neon / RDS). JSON payloads are
+// stored as strings so the schema works on both providers.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  name             String?
+  passwordHash     String
+  credits          Int            @default(0)
+  plan             String         @default("free")
+  stripeCustomerId String?        @unique
+  createdAt        DateTime       @default(now())
+  projects         Project[]
+  ledger           CreditLedger[]
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anonId      String?
+  ip          String?
+  url         String
+  domain      String
+  name        String?
+  status      String       @default("scanned") // scanned | series | production
+  crawl       String // JSON: CrawlResult
+  dna         String // JSON: BrandScan (brand, story, compliance, formatRanking, concepts)
+  conceptIdx  Int?
+  formatId    String?
+  aspect      String       @default("9:16")
+  series      String? // JSON: SeriesBible
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  episodes    Episode[]
+  generations Generation[]
+
+  @@index([userId])
+  @@index([anonId])
+  @@index([ip, createdAt])
+}
+
+model Episode {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number     Int
+  title      String
+  outline    String // JSON: EpisodeOutline
+  script     String? // JSON: EpisodeScript (caption, hashtags, disclosure)
+  finalUrl   String?
+  stitchedAt DateTime?
+  createdAt  DateTime @default(now())
+  shots      Shot[]
+
+  @@unique([projectId, number])
+}
+
+model Shot {
+  id           String   @id @default(cuid())
+  episodeId    String
+  episode      Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  index        Int
+  duration     Int
+  shotType     String
+  description  String
+  imagePrompt  String
+  motionPrompt String
+  dialogue     String?
+  onScreenText String?
+  characters   String   @default("[]") // JSON: character keys in shot
+  frameUrl     String? // display URL (archived when storage is configured)
+  frameInput   String? // public URL usable as model input
+  frameStatus  String   @default("none") // none | pending | done | failed | demo
+  videoUrl     String?
+  videoStatus  String   @default("none")
+  error        String?
+
+  @@unique([episodeId, index])
+}
+
+model Generation {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String?
+  kind        String // character | frame | video
+  targetId    String // character key or shot id
+  model       String
+  requestId   String?  @unique
+  statusUrl   String?
+  status      String   @default("queued") // queued | in_progress | completed | failed | nsfw | canceled | demo
+  input       String // JSON
+  outputUrl   String?
+  archivedUrl String?
+  credits     Int      @default(0)
+  refunded    Boolean  @default(false)
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId, status])
+}
+
+model CreditLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  reason    String
+  refId     String?  @unique
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  type      String // studio | distribution | contact
+  name      String
+  email     String
+  company   String?
+  url       String?
+  budget    String?
+  message   String?
+  projectId String?
+  userId    String?
+  createdAt DateTime @default(now())
+}
+
+model WebhookEvent {
+  id        String   @id
+  source    String
+  createdAt DateTime @default(now())
+}
