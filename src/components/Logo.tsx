@@ -8,7 +8,7 @@ export function Logo({ href = "/" }: { href?: string }) {
         <span className="absolute inset-[3px] rounded-full bg-ink" />
         <span className="absolute inset-[8px] rounded-full bg-gradient-to-br from-aura to-aura-2" />
       </span>
-      <span className="font-display text-[1.45rem] leading-none">
+      <span className="whitespace-nowrap font-display text-[1.45rem] leading-none">
         Aura <span className="italic text-muted">Engine</span>
       </span>
     </Link>

@@ -20,10 +20,10 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
   return (
     <div className="min-h-screen">
       <SiteNav />
-      <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-2">
+      <section className="mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-32 lg:grid-cols-2">
         <div>
           <p className="eyebrow mb-4">{isDistribution ? "Distribution" : "InkFrame Studio"}</p>
-          <h1 className="font-display text-5xl sm:text-6xl">
+          <h1 className="mega text-5xl sm:text-7xl">
             {isDistribution ? "Get your series watched." : "A film studio for brands, with an AI-first pipeline."}
           </h1>
           <p className="mt-5 text-muted">
