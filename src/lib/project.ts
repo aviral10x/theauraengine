@@ -147,6 +147,9 @@ export function errorResponse(e: unknown) {
     return Response.json({ error: e.message, code: "insufficient_credits" }, { status: 402 });
   }
   console.error(e);
-  const message = e instanceof Error ? e.message : "Something went wrong";
-  return Response.json({ error: message }, { status: 500 });
+  if (!process.env.DATABASE_URL) {
+    return Response.json({ error: "Aura Engine is finishing setup (database not connected yet). Please try again shortly." }, { status: 503 });
+  }
+  // Never leak internal error details (SQL, stack traces, provider responses) to clients.
+  return Response.json({ error: "Something went wrong on our side. Please try again." }, { status: 500 });
 }
