@@ -1,5 +1,7 @@
 # Aura Engine
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Faviral10x%2Ftheauraengine&project-name=theauraengine&env=AUTH_SECRET,ANTHROPIC_API_KEY,HF_API_KEY_ID,HF_API_KEY_SECRET&envDescription=See%20.env.example&envLink=https%3A%2F%2Fgithub.com%2Faviral10x%2Ftheauraengine%2Fblob%2Fmain%2F.env.example&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%2C%22access%22%3A%22public%22%7D%5D)
+
 **Paste your URL. Get a series, not an ad.**
 The AI video engine from InkFrame Films (the studio behind @aurakidzzz: 550K followers and 700M+ organic views). It turns a brand's website into micro-dramas, character series and launch films, using the formats the team proved organically, with distribution and an InkFrame studio handoff built in.
 
@@ -23,8 +25,9 @@ The Aura Format Library lives in `src/lib/formats.ts`: Character Chaos, Micro-Dr
 
 ```bash
 npm install
+docker compose up -d          # local Postgres on :5432 (or use any Postgres URL)
 cp .env.example .env          # set AUTH_SECRET at minimum for `npm start`
-npx prisma db push            # creates prisma/dev.db (SQLite)
+npx prisma migrate deploy     # creates the tables
 npm run dev                   # http://localhost:3000
 ```
 
@@ -40,17 +43,23 @@ Make yourself an admin by putting your email in `ADMIN_EMAILS`.
 | `HF_API_KEY_ID` + `HF_API_KEY_SECRET` | console.higgsfield.ai → API keys (prepaid USD balance, $5 min) | Character sheets, storyboards, video |
 | `HF_WEBHOOK_SECRET` | Higgsfield console → Settings → webhook signing secret (`whsec_…`) | Instant completion via webhooks (polling works without it) |
 | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` | dashboard.stripe.com → Developers | Subscriptions + top-ups. Webhook endpoint: `/api/webhooks/stripe`, events: `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted` |
-| `S3_*` | Cloudflare R2 (recommended) or AWS S3 bucket with public read URL | Permanent storage of frames/videos/final cuts (**required in production**) |
-| `DATABASE_URL` | Supabase / Neon Postgres | Production database |
+| `BLOB_READ_WRITE_TOKEN` *(or `S3_*`)* | Vercel → Storage → Blob (public), auto-injected | Permanent storage of frames/videos/final cuts (**required in production**) |
+| `DATABASE_URL` + `DATABASE_URL_UNPOOLED` | Vercel → Storage → Neon, auto-injected | Production database |
 | `AUTH_SECRET` | `openssl rand -base64 48` | Session signing (**required in production**) |
 | `LEADS_WEBHOOK_URL` *(optional)* | Slack incoming webhook / Zapier | Pinging the team on studio + distribution leads |
 
-## Deploy
+## Deploy to Vercel
 
-1. **Database:** in `prisma/schema.prisma` change `provider = "sqlite"` to `"postgresql"`, set `DATABASE_URL`, run `npx prisma db push`.
-2. **Host:** Vercel (Pro plan for 300s function duration on scans/scripts) or any Node host / container. `ffmpeg-static` ships the ffmpeg binary; set `FFMPEG_PATH` to use a system ffmpeg instead.
-3. Set `APP_URL` to your https domain. This enables Higgsfield webhooks at `/api/webhooks/higgsfield`.
-4. Add the Stripe webhook endpoint and the Higgsfield signing secret.
+**One click:** use the Deploy button above. It creates the project, provisions **Neon Postgres** + a **public Blob store**, and asks for the keys.
+
+**Or manually:**
+1. vercel.com → Add New → Project → import `aviral10x/theauraengine` (framework: Next.js, defaults are fine).
+2. Project → **Storage** → connect **Neon** (Postgres) and **Blob** (access: *public*). These inject `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and the Blob credentials.
+3. Project → Settings → **Environment Variables**: `AUTH_SECRET` (required), `ANTHROPIC_API_KEY`, `HF_API_KEY_ID`, `HF_API_KEY_SECRET`, `HF_WEBHOOK_SECRET`, `ADMIN_EMAILS`, and optionally the Stripe keys.
+4. Deploy. The build runs `prisma migrate deploy`, so tables are created automatically.
+5. After the first deploy: in the Higgsfield console set the webhook signing secret; in Stripe add the endpoint `https://<your-domain>/api/webhooks/stripe`.
+
+Notes: `APP_URL` defaults to the Vercel production domain. Scans and scripts can take up to 300s (`maxDuration`), which Vercel supports with Fluid compute. `ffmpeg-static` is bundled into the stitch function automatically.
 
 ## Unit economics (defaults in `src/lib/credits.ts`)
 

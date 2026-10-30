@@ -1,5 +1,6 @@
 import "server-only";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { put } from "@vercel/blob";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { env, features } from "./env";
@@ -21,11 +22,15 @@ function s3Client() {
 
 /**
  * Store bytes and return a URL.
- * - With S3/R2 configured: returns a public URL (also usable as a model input).
+ * - With Vercel Blob (BLOB_READ_WRITE_TOKEN) or S3/R2 configured: returns a public URL (also usable as a model input).
  * - Without: writes to .data/media and serves it via /api/media (dev / single-server only).
  */
 export async function putObject(key: string, body: Buffer, contentType: string): Promise<{ url: string; isPublic: boolean }> {
   const safeKey = key.replace(/[^a-zA-Z0-9/_.-]/g, "_").replace(/\.\.+/g, ".");
+  if (features.blob) {
+    const res = await put(safeKey, body, { access: "public", contentType, addRandomSuffix: false, allowOverwrite: true });
+    return { url: res.url, isPublic: true };
+  }
   if (features.s3) {
     await s3Client().send(
       new PutObjectCommand({ Bucket: env.s3Bucket, Key: safeKey, Body: body, ContentType: contentType }),

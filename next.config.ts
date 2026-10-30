@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["ffmpeg-static", "@prisma/client", ".prisma/client"],
+  outputFileTracingIncludes: {
+    "/api/projects/[id]/episodes/[number]/stitch": ["./node_modules/ffmpeg-static/ffmpeg"],
+  },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "www.inkframefilms.com" }],
   },

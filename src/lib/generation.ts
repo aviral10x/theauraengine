@@ -191,7 +191,7 @@ export function genDisplayUrl(g: Generation | undefined) {
 }
 export function genInputUrl(g: Generation | undefined) {
   if (!g || (g.status !== "completed")) return null;
-  return g.archivedUrl && features.s3 ? g.archivedUrl : g.outputUrl;
+  return g.archivedUrl && (features.s3 || features.blob) ? g.archivedUrl : g.outputUrl;
 }
 
 export async function startCharacterSheets(project: Project, userId: string, keys?: string[]) {

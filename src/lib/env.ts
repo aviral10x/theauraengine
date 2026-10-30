@@ -2,7 +2,12 @@ import "server-only";
 
 /** Central place for configuration and feature flags. Every integration degrades to a demo mode when unset. */
 export const env = {
-  appUrl: (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
+  appUrl: (
+    process.env.APP_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+    "http://localhost:3000"
+  ).replace(/\/$/, ""),
   authSecret: process.env.AUTH_SECRET || "",
   adminEmails: (process.env.ADMIN_EMAILS || "")
     .split(",")
@@ -22,6 +27,7 @@ export const env = {
   stripeSecret: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
 
+  blobToken: process.env.BLOB_READ_WRITE_TOKEN || "",
   s3Bucket: process.env.S3_BUCKET || "",
   s3Region: process.env.S3_REGION || "auto",
   s3Endpoint: process.env.S3_ENDPOINT || "",
@@ -34,6 +40,8 @@ export const features = {
   claude: Boolean(env.anthropicKey),
   higgsfield: Boolean(env.hfKeyId && env.hfKeySecret),
   stripe: Boolean(env.stripeSecret),
+  // Vercel Blob: classic stores expose BLOB_READ_WRITE_TOKEN; newer stores use OIDC + BLOB_STORE_ID (SDK handles both).
+  blob: Boolean(env.blobToken || process.env.BLOB_STORE_ID),
   s3: Boolean(env.s3Bucket && env.s3AccessKey && env.s3SecretKey && env.s3PublicUrl),
   webhooks: env.appUrl.startsWith("https://"),
 };

@@ -1,14 +1,15 @@
-// Local dev uses SQLite. For production switch provider to "postgresql"
-// and point DATABASE_URL at Postgres (Supabase / Neon / RDS). JSON payloads are
-// stored as strings so the schema works on both providers.
+// PostgreSQL everywhere (Neon via the Vercel Marketplace in production).
+// DATABASE_URL = pooled connection (runtime), DATABASE_URL_UNPOOLED = direct connection (migrations).
+// Outside Neon, set both to the same connection string.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {
@@ -34,12 +35,12 @@ model Project {
   domain      String
   name        String?
   status      String       @default("scanned") // scanned | series | production
-  crawl       String // JSON: CrawlResult
-  dna         String // JSON: BrandScan (brand, story, compliance, formatRanking, concepts)
+  crawl       String       @db.Text // JSON: CrawlResult
+  dna         String       @db.Text // JSON: BrandScan
   conceptIdx  Int?
   formatId    String?
   aspect      String       @default("9:16")
-  series      String? // JSON: SeriesBible
+  series      String?      @db.Text // JSON: SeriesBible
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   episodes    Episode[]
